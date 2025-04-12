@@ -1,38 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="greenhouse_monitoring_project">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>greenhouse_monitoring_project</title>
-  <link rel="manifest" href="manifest.json">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Ensure smooth transition for dark mode toggle */
+    body {
+      transition: background-color 0.3s, color 0.3s;
+    }
+  </style>
 </head>
-<body>
-  <script src="flutter_bootstrap.js" async></script>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans leading-normal tracking-normal transition-colors duration-300">
+
+  <!-- Dark Mode Toggle Button -->
+  <div class="absolute top-4 right-4">
+    <button id="toggleDarkMode" class="bg-blue-500 text-white py-2 px-4 rounded-md focus:outline-none hover:bg-blue-600">
+      Toggle Dark Mode
+    </button>
+  </div>
+
+  <!-- Main Container -->
+  <div class="flex justify-center items-center min-h-screen py-6 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-sm w-full bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 border border-gray-300 dark:border-gray-600">
+      
+      <!-- Profile Picture with Border -->
+      <div class="flex justify-center">
+        <div class="relative">
+          <img class="w-32 h-32 rounded-full border-4 border-indigo-600 shadow-lg" src="https://randomuser.me/api/portraits/men/10.jpg" alt="Profile Picture">
+          <div class="absolute bottom-0 right-0 bg-indigo-600 p-2 rounded-full shadow-md">
+            <svg class="w-6 h-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor">
+              <path d="M20 14a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-6 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-6 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Name -->
+      <h2 class="mt-4 text-center text-2xl font-semibold text-gray-800 dark:text-white">John Doe</h2>
+      
+      <!-- Bio -->
+      <p class="mt-2 text-center text-gray-600 dark:text-gray-400">A passionate web developer and tech enthusiast. I love to create cool and innovative websites!</p>
+      
+      <!-- Social Links -->
+      <div class="mt-6 flex justify-center space-x-6">
+        <a href="#" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600 transition duration-200">
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M22 12c0 5.5-4.5 10-10 10s-10-4.5-10-10 4.5-10 10-10 10 4.5 10 10z"/>
+            <path d="M16.6 10.2l-5.4 4.4-2.4-2.2-4.8 6.6h13.2l-2.6-4.8-1.4 2z"/>
+          </svg>
+        </a>
+        <a href="#" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600 transition duration-200">
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M20.5 0c1.5 0 2.5 1 2.5 2.5v19c0 1.5-1 2.5-2.5 2.5h-17c-1.5 0-2.5-1-2.5-2.5v-19c0-1.5 1-2.5 2.5-2.5h17zm-1 3h-15c-.5 0-.5.5-.5.5v17c0 .5.5.5.5.5h15c.5 0 .5-.5.5-.5v-17c0-.5-.5-.5-.5-.5zm-7 13h-3v-2h3v2zm0-3h-3v-7h3v7z"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Contact Info with Borders -->
+      <div class="mt-6 space-y-3">
+        <div class="flex items-center text-gray-600 dark:text-gray-400 border-b border-gray-300 dark:border-gray-600 pb-2">
+          <svg class="w-5 h-5 text-gray-400 mr-2 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M0 0h24v24h-24z" fill="none"/>
+            <path d="M12 3l2.29 2.29-1.42 1.42-2-2-2 2-1.42-1.42z"/>
+          </svg>
+          <p>johndoe@example.com</p>
+        </div>
+        <div class="flex items-center text-gray-600 dark:text-gray-400 border-b border-gray-300 dark:border-gray-600 pb-2">
+          <svg class="w-5 h-5 text-gray-400 mr-2 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M0 0h24v24h-24z" fill="none"/>
+            <path d="M12 3l2.29 2.29-1.42 1.42-2-2-2 2-1.42-1.42z"/>
+          </svg>
+          <p>+1 (123) 456-7890</p>
+        </div>
+        <div class="flex items-center text-gray-600 dark:text-gray-400">
+          <svg class="w-5 h-5 text-gray-400 mr-2 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M0 0h24v24h-24z" fill="none"/>
+            <path d="M12 3l2.29 2.29-1.42 1.42-2-2-2 2-1.42-1.42z"/>
+          </svg>
+          <p>New York, USA</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const toggleButton = document.getElementById("toggleDarkMode");
+
+    // Check local storage to apply dark mode setting when page loads
+    if (localStorage.getItem('dark-mode') === 'enabled') {
+      document.body.classList.add('dark');
+    }
+
+    toggleButton.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      // Save the dark mode state to localStorage
+      if (document.body.classList.contains('dark')) {
+        localStorage.setItem('dark-mode', 'enabled');
+      } else {
+        localStorage.setItem('dark-mode', 'disabled');
+      }
+    });
+  </script>
+
 </body>
 </html>

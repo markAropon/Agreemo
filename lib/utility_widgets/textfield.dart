@@ -16,6 +16,7 @@ class Textfield extends StatefulWidget {
     required this.hintText,
     required this.label,
     required this.isPasswordField,
+    FocusNode? focusNode,
   });
 
   @override
@@ -54,8 +55,7 @@ class _TextfieldState extends State<Textfield> {
               hintText: widget.hintText,
               suffix: widget.isPasswordField
                   ? GestureDetector(
-                      onTap:
-                          togglePasswordVisibility, // Show/hide password when tapped
+                      onTap: togglePasswordVisibility,
                       child: Icon(
                         _obscureText ? Icons.visibility_off : Icons.visibility,
                       ),
@@ -64,16 +64,14 @@ class _TextfieldState extends State<Textfield> {
                       onTap: clear,
                       child: const Icon(Icons.clear),
                     ),
-              fillColor: Colors.white, // Set background color to white
-              filled: true, // Ensure the background color is filled
-              hintStyle:
-                  const TextStyle(color: Colors.grey), // Style for hint text
+              fillColor: Colors.white,
+              filled: true,
+              hintStyle: const TextStyle(color: Colors.grey),
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-
               contentPadding: const EdgeInsets.symmetric(
                 vertical: 20.0,
-                horizontal: 15.0, // Padding inside the Textbox
+                horizontal: 15.0,
               ),
             ),
           ),

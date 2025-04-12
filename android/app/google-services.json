@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "830559955897",
+    "firebase_url": "https://aggreemo-login-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "aggreemo-login",
     "storage_bucket": "aggreemo-login.firebasestorage.app"
   },

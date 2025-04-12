@@ -3,9 +3,11 @@ buildscript {
         google()
         mavenCentral()
     }
+    
     dependencies {
         // Gradle plugin version compatible with AGP 8.1.0
-         classpath 'com.android.tools.build:gradle:8.0.2'
+        classpath 'com.android.tools.build:gradle:8.0.2'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0'  // Add this
 
         // Firebase/Google Services Plugin (optional)
         // Uncomment if required

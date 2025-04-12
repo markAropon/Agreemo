@@ -1,16 +1,11 @@
 // ignore_for_file: use_build_context_synchronously, library_private_types_in_public_api
+import 'dart:math';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:awesome_dialog/awesome_dialog.dart';
-import 'package:greenhouse_monitoring_project/pages/dashboard.dart';
-
+import 'package:pin_code_fields/pin_code_fields.dart';
+import '../functions/UserFunctions.dart';
 import '../utility_widgets/buttons.dart';
 import '../utility_widgets/textfield.dart';
-
-void main() {
-  runApp(const LoginScreen());
-}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,75 +17,23 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final username = TextEditingController();
   final pass = TextEditingController();
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
-  // Button
-  void signinUser(BuildContext context) async {
-    if (username.text.isEmpty || pass.text.isEmpty) {
-      AwesomeDialog(
-        context: context,
-        dialogType: DialogType.info,
-        animType: AnimType.topSlide,
-        title: 'Missing Credentials',
-        desc: 'Please enter both email and password.',
-        btnOkOnPress: () {},
-      ).show();
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: username.text,
-        password: pass.text,
-      );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Dashboard()),
-      );
-    } on FirebaseAuthException catch (errorMessage) {
-      String message;
-
-      switch (errorMessage.code) {
-        case 'invalid-credential':
-          message =
-              'The Credentials Given Does Not Match Anything In the Database.';
-          break;
-        case 'invalid-email':
-          message = 'The email address is not valid.';
-          break;
-        case 'too-many-requests':
-          message = 'Too many requests. Please try again later.';
-          break;
-        default:
-          message =
-              'An unknown error occurred. Please try again.  ${errorMessage.code.toString()}';
+  @override
+  void initState() {
+    super.initState();
+    username.addListener(() {
+      if (username.text.isNotEmpty) {
+        GetUserEmail(username.text);
       }
+    });
+  }
 
-      AwesomeDialog(
-        context: context,
-        dialogType: DialogType.error,
-        animType: AnimType.topSlide,
-        title: 'Login Failed',
-        desc: message,
-        btnOkOnPress: () {},
-      ).show();
-    } catch (e) {
-      AwesomeDialog(
-        context: context,
-        dialogType: DialogType.error,
-        animType: AnimType.topSlide,
-        title: 'Error',
-        desc: 'An unexpected error occurred: ${e.toString()}',
-        btnOkOnPress: () {},
-      ).show();
-    } finally {
-      setState(() {
-        _isLoading = false; // Hide loading indicator
-      });
-    }
+  @override
+  void dispose() {
+    username.dispose();
+    pass.dispose();
+    super.dispose();
   }
 
   @override
@@ -99,9 +42,8 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         iconTheme: const IconThemeData(
-          color: Colors.blue,
+          color: Color.fromARGB(255, 19, 62, 135),
         ),
-        title: const Text(''),
         backgroundColor: const Color.fromARGB(255, 220, 224, 230),
       ),
       body: Container(
@@ -110,8 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color.fromARGB(255, 220, 224, 230), // Light Steel Blue
-              Color.fromARGB(255, 97, 174, 236), // Steel Blue
+              Color.fromARGB(255, 220, 224, 230),
+              Color.fromARGB(255, 97, 174, 236),
             ],
           ),
         ),
@@ -131,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
               alignment: Alignment.bottomCenter,
               child: Container(
                 width: MediaQuery.of(context).size.width,
-                height: 520,
+                height: MediaQuery.of(context).size.height - 170,
                 decoration: const BoxDecoration(
                   color: Color.fromRGBO(19, 62, 135, 1),
                   border: Border.symmetric(
@@ -188,12 +130,89 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       Container(
                         margin: const EdgeInsets.only(right: 10),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             TextButton(
-                              onPressed: forgotpass,
-                              child: Text(
+                              onPressed: () {
+                                // Trigger forgot password flow
+                                forgotpass(context, username.text);
+
+                                TextEditingController pinController =
+                                    TextEditingController();
+
+                                showCustomDialog(
+                                  context: context,
+                                  title: "Enter Pin",
+                                  message:
+                                      "A Pin has been sent to your Gmail. Please enter it below.",
+                                  icon: Icons.lock,
+                                  iconColor: Colors.redAccent,
+                                  backgroundColor: Colors.white,
+                                  labels: ['Enter Pin'],
+                                  hints: ['Enter the pin sent to your email'],
+                                  obscureTextList: [false],
+                                  pinCodeTextField: PinCodeTextField(
+                                    appContext: context,
+                                    length: 6,
+                                    cursorColor: Colors.black,
+                                    animationDuration:
+                                        const Duration(milliseconds: 300),
+                                    enableActiveFill: true,
+                                    controller: pinController,
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (value) {
+                                      // onChanged can still be used for intermediate actions, if needed.
+                                    },
+                                    onCompleted: (value) {
+                                      // Generate a random token when pin input is completed
+                                      String generateRandomToken(int length) =>
+                                          List.generate(
+                                              length,
+                                              (index) => Random()
+                                                  .nextInt(36)
+                                                  .toRadixString(36)).join();
+                                      String token = generateRandomToken(10);
+                                      String pin = pinController.text;
+                                      String email = username.text;
+
+                                      // Call verifyCode with the entered username, pin, and generated token
+                                      verifyCode(email, pin, token);
+
+                                      // Show the next dialog to input the new password
+                                      TextEditingController
+                                          newPasswordController =
+                                          TextEditingController();
+
+                                      showCustomDialog(
+                                        context: context,
+                                        title: "Enter New Password",
+                                        message: "Create Your New Password",
+                                        icon: Icons.pending_actions,
+                                        iconColor: Colors.blue,
+                                        backgroundColor: Colors.white,
+                                        labels: ['Enter Password'],
+                                        hints: ['Enter your new password'],
+                                        changePasswordController:
+                                            newPasswordController,
+                                        obscureTextList: [true],
+                                        onConfirm: () {
+                                          // When confirmed, change the password using the provided information
+                                          changePass(
+                                              email,
+                                              newPasswordController.text,
+                                              token);
+                                        },
+                                      );
+                                    },
+                                  ),
+                                  reSend: () {
+                                    // Option to resend the pin if needed
+                                    forgotpass(context, username.text);
+                                  },
+                                );
+                              },
+                              child: const Text(
                                 'Forgot Password?',
                                 style: TextStyle(color: Colors.white),
                               ),
@@ -203,26 +222,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 2),
                       Buttons(
-                        onTap: () => signinUser(context),
+                        onTap: () => signinUser(
+                          context,
+                          username: username,
+                          pass: pass,
+                          setState: setState,
+                        ),
                         color: const Color.fromARGB(255, 13, 183, 101),
                         label: 'Login',
                         labelColor: Colors.white,
                         Borderradius: 5,
                       ),
                       if (_isLoading) const CircularProgressIndicator(),
-                      /*                    const SizedBox(
-                        height: 20,
-                      ),
-                      GestureDetector(
-                        onTap: googleLogin,
-                        child: SizedBox(
-                          height: 50,
-                          width: 50,
-                          child: Lottie.asset(
-                            'assets/farmer.json',
-                          ),
-                        ),
-                      ),*/
                     ],
                   ),
                 ),
@@ -234,7 +245,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-googleLogin() {}
-
-forgotpass() {}

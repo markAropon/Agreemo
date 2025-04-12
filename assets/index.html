@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Image</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Upload Image to Roboflow</h1>
+    <input type="file" id="imageInput" accept="image/*" />
+    <button onclick="uploadImage()">Upload</button>
+    <p id="responseMessage"></p>
+
+    <script>
+        const apiKey = "YeHix9qLq3FoZZKPj4zy";
+        const projectId = "all-about-lettuce";
+        const modelVersion = "8";
+
+        function uploadImage() {
+            const input = document.getElementById('imageInput');
+            const file = input.files[0];
+            if (!file) {
+                alert("Please select an image.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = function () {
+                const base64Image = reader.result.split(',')[1];
+
+                axios.post(`https://detect.roboflow.com/${projectId}/${modelVersion}?api_key=${apiKey}`, 
+                `image=${base64Image}`, {
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+                })
+                .then(response => {
+                    document.getElementById('responseMessage').innerText = 'Success: ' + response.data;
+                })
+                .catch(error => {
+                    document.getElementById('responseMessage').innerText = 'Error: ' + error.message;
+                });
+            };
+
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>

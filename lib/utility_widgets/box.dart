@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
 class Box extends StatelessWidget {
-  final double height;
   final Color color;
-  final BorderRadiusGeometry borderRadius;
-  final Widget child;
+  final double height;
+  final double width;
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
-  final double width;
+  final Color? BorderColor;
+  final BorderRadiusGeometry borderRadius;
+  final Widget child;
 
   const Box({
     super.key,
@@ -18,6 +19,7 @@ class Box extends StatelessWidget {
     this.padding = const EdgeInsets.all(0.0),
     this.margin = const EdgeInsets.all(0.0),
     required this.width,
+    this.BorderColor,
   });
 
   @override
@@ -27,19 +29,14 @@ class Box extends StatelessWidget {
       width: width,
       margin: margin,
       decoration: BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment.center,
-          radius: 0.6,
-          colors: [
-            color.withOpacity(0.7),
-            color.withOpacity(0.0),
-          ],
-        ),
+        color: color,
         borderRadius: borderRadius,
-        border: Border.all(
-          color: color.withOpacity(0.8),
-          width: 2,
-        ),
+        border: BorderColor != null
+            ? Border.all(
+                color: BorderColor!,
+                width: 1,
+              )
+            : null,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.3),

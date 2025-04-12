@@ -1,7 +1,6 @@
-import 'dart:typed_data';
+/* import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:flutter/services.dart';
 
@@ -73,7 +72,7 @@ class _TrackerState extends State<Tracker> {
   }
 
   // Preprocess the camera image and prepare the tensor for the model
-  /*Float32List preprocessImage(CameraImage imageFromStream) {
+  Float32List preprocessImage(CameraImage imageFromStream, dynamic imageLib) {
     try {
       var planes = imageFromStream.planes;
       var bytesList = <int>[];
@@ -81,15 +80,15 @@ class _TrackerState extends State<Tracker> {
         bytesList.addAll(plane.bytes);
       }
 
-      img.Image originalImage = img.Image.fromBytes(
+      var originalImage = imageLib.Image.fromBytes(
         imageFromStream.width,
         imageFromStream.height,
         Uint8List.fromList(bytesList),
-        format: img.Format.rgb,
+        format: imageLib.Format.rgb,
       );
 
-      img.Image resizedImage =
-          img.copyResize(originalImage, width: 224, height: 224);
+      var resizedImage =
+          imageLib.copyResize(originalImage, width: 224, height: 224);
 
       // Ensure that the input tensor size is correct
       int tensorSize = 224 * 224 * 3;
@@ -100,9 +99,9 @@ class _TrackerState extends State<Tracker> {
         for (var x = 0; x < 224; x++) {
           var pixel = resizedImage.getPixel(x, y);
 
-          int red = img.getRed(pixel);
-          int green = img.getGreen(pixel);
-          int blue = img.getBlue(pixel);
+          int red = imageLib.getRed(pixel);
+          int green = imageLib.getGreen(pixel);
+          int blue = imageLib.getBlue(pixel);
 
           // Debugging: Check the index value to avoid range errors
           if (index >= tensorSize) {
@@ -121,7 +120,7 @@ class _TrackerState extends State<Tracker> {
       print("Error during image preprocessing: $e");
       rethrow; // Re-throw the error so it can be caught in the main logic
     }
-  }*/
+  }
 
   // Run the model on the stream frame
   runModelOnStream(dynamic imageFromStream) async {
@@ -207,3 +206,4 @@ class _TrackerState extends State<Tracker> {
     );
   }
 }
+ */

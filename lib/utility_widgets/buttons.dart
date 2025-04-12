@@ -24,7 +24,7 @@ class Buttons extends StatelessWidget {
           tapDelay: const Duration(milliseconds: 150),
           longPressDuration: const Duration(microseconds: 0),
           child: Container(
-            width: MediaQuery.of(context).size.width - 80,
+            width: MediaQuery.of(context).size.width - 90,
             padding: const EdgeInsets.all(10),
             margin: const EdgeInsets.symmetric(horizontal: 15),
             decoration: BoxDecoration(
@@ -39,6 +39,7 @@ class Buttons extends StatelessWidget {
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.8),
+                softWrap: false,
               ),
             ),
           )),

@@ -1,181 +1,144 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
-import 'package:tflite_flutter/tflite_flutter.dart';
-import 'dart:math' as math;
+import 'package:webview_flutter/webview_flutter.dart';
 
-import 'models.dart';
+class LiveStreamWidget extends StatefulWidget {
+  final String streamUrl;
 
-typedef Callback = void Function(List<dynamic> list, int h, int w);
-
-class CameraWidget extends StatefulWidget {
-  final List<CameraDescription> cameras;
-  final Callback setRecognitions;
-  final String model;
-
-  const CameraWidget(this.cameras, this.model, this.setRecognitions,
-      {super.key});
+  const LiveStreamWidget({super.key, required this.streamUrl});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _CameraState createState() => _CameraState();
+  State<LiveStreamWidget> createState() => _LiveStreamWidgetState();
 }
 
-class _CameraState extends State<CameraWidget> {
-  late CameraController controller;
-  bool isDetecting = false;
-  late Interpreter _interpreter;
+class _LiveStreamWidgetState extends State<LiveStreamWidget> {
+  bool _isLoading = true;
+  bool _hasError = false;
+  int _reloadTrigger = 0;
+  late Timer _autoReloadTimer;
+  late WebViewController _webViewController;
 
   @override
   void initState() {
     super.initState();
-    loadModel(); // Load the model when the widget is initialized.
+    _initializeWebView();
+    _startAutoReload();
+  }
 
-    if (widget.cameras.isEmpty) {
-      print('No camera is found');
-    } else {
-      controller = CameraController(
-        widget.cameras[0],
-        ResolutionPreset.high,
-      );
-      controller.initialize().then((_) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {});
+  void _startAutoReload() {
+    _autoReloadTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+      if (mounted && !_hasError) {
+        _retryStream();
+      }
+    });
+  }
 
-        controller.startImageStream((CameraImage img) {
-          if (!isDetecting) {
-            isDetecting = true;
-
-            int startTime = DateTime.now().millisecondsSinceEpoch;
-
-            if (widget.model == mobilenet) {
-              _runModelOnFrame(img);
-            } else if (widget.model == posenet) {
-              _runPoseNetOnFrame(img);
-            } else {
-              _runObjectDetectionOnFrame(img);
+  void _initializeWebView() {
+    _webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (String url) {
+            if (mounted) {
+              setState(() => _isLoading = false);
             }
+          },
+          onWebResourceError: (error) {
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _hasError = true;
+              });
+            }
+          },
+        ),
+      )
+      ..loadHtmlString(_getHtmlContent());
+  }
 
-            int endTime = DateTime.now().millisecondsSinceEpoch;
-            print("Detection took ${endTime - startTime} ms");
-          }
-        });
+  String _getHtmlContent() => '''
+    <html>
+      <body style="margin:0;padding:0;">
+        <img src="${widget.streamUrl}?t=${DateTime.now().millisecondsSinceEpoch}" 
+             style="width:100%;height:100%;object-fit:cover;" 
+             alt="Live Stream">
+      </body>
+    </html>
+  ''';
+
+  void _retryStream() {
+    if (mounted) {
+      setState(() {
+        _hasError = false;
+        _isLoading = true;
+        _reloadTrigger++;
       });
     }
+    _webViewController.loadHtmlString(_getHtmlContent());
   }
 
   @override
   void dispose() {
-    controller.dispose();
-    _interpreter.close(); // Don't forget to close the interpreter when done.
+    _autoReloadTimer.cancel();
     super.dispose();
-  }
-
-  // Loading the appropriate model with tflite_flutter
-  loadModel() async {
-    try {
-      String modelPath;
-      if (widget.model == mobilenet) {
-        modelPath = "assets/models/mobilenet_v1_1.0_224.tflite";
-      } else if (widget.model == posenet) {
-        modelPath =
-            "assets/models/posenet_mv1_075_float_from_checkpoints.tflite";
-      } else {
-        modelPath = "assets/models/ssd_mobilenet.tflite";
-      }
-
-      _interpreter = await Interpreter.fromAsset(modelPath);
-      print("Model loaded successfully.");
-    } catch (e) {
-      print("Error loading model: $e");
-    }
-  }
-
-  // Object Detection method using tflite_flutter
-  _runObjectDetectionOnFrame(CameraImage img) async {
-    if (_interpreter == null) {
-      print("Interpreter is not initialized yet.");
-      return;
-    }
-
-    var inputImage = img.planes.map((plane) {
-      return plane.bytes;
-    }).toList();
-
-    var input = inputImage.first; // Placeholder for the image input.
-    var output = List.filled(1, 0);
-
-    // Perform inference here. Update with correct model's input/output shapes.
-    _interpreter.run(input, output);
-
-    widget.setRecognitions(output, img.height, img.width);
-    isDetecting = false;
-  }
-
-  // PoseNet method using tflite_flutter
-  _runPoseNetOnFrame(CameraImage img) async {
-    if (_interpreter == null) {
-      print("Interpreter is not initialized yet.");
-      return;
-    }
-
-    var inputImage = img.planes.map((plane) {
-      return plane.bytes;
-    }).toList();
-
-    var input = inputImage.first;
-    var output = List.filled(1, 0);
-
-    // Perform inference here for PoseNet.
-    _interpreter.run(input, output);
-
-    widget.setRecognitions(output, img.height, img.width);
-    isDetecting = false;
-  }
-
-  // MobileNet method using tflite_flutter
-  _runModelOnFrame(CameraImage img) async {
-    if (_interpreter == null) {
-      print("Interpreter is not initialized yet.");
-      return;
-    }
-
-    var inputImage = img.planes.map((plane) {
-      return plane.bytes;
-    }).toList();
-
-    var input = inputImage.first; // Placeholder for the image input.
-    var output = List.filled(1, 0);
-
-    // Perform inference with the model here.
-    _interpreter.run(input, output);
-
-    widget.setRecognitions(output, img.height, img.width);
-    isDetecting = false;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!controller.value.isInitialized) {
-      return Container();
-    }
+    return Column(
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.videocam, color: Colors.red),
+            SizedBox(width: 10),
+            Text(
+              'Live Camera Feed',
+              style: TextStyle(color: Colors.red),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          height: MediaQuery.of(context).size.height * 0.3,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: _hasError
+              ? _buildErrorWidget()
+              : Stack(
+                  children: [
+                    WebViewWidget(
+                      controller: _webViewController,
+                      key: ValueKey<int>(_reloadTrigger),
+                    ),
+                    if (_isLoading)
+                      const Center(child: CircularProgressIndicator()),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
 
-    var tmp = MediaQuery.of(context).size;
-    var screenH = math.max(tmp.height, tmp.width);
-    var screenW = math.min(tmp.height, tmp.width);
-    tmp = controller.value.previewSize!;
-    var previewH = math.max(tmp.height, tmp.width);
-    var previewW = math.min(tmp.height, tmp.width);
-    var screenRatio = screenH / screenW;
-    var previewRatio = previewH / previewW;
-
-    return OverflowBox(
-      maxHeight:
-          screenRatio > previewRatio ? screenH : screenW / previewW * previewH,
-      maxWidth:
-          screenRatio > previewRatio ? screenH / previewH * previewW : screenW,
-      child: CameraPreview(controller),
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Stream Connection Error',
+              style: TextStyle(color: Colors.red)),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: _retryStream,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Retry Connection'),
+          ),
+        ],
+      ),
     );
   }
 }
