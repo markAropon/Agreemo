@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import '../functions/sqlite.dart';
+//import 'package:http/http.dart' as http;
 
 class Plantstatus extends StatefulWidget {
   const Plantstatus({super.key});
@@ -685,3 +686,27 @@ class _PlantStatusMiniState extends State<PlantStatusMini> {
     );
   }
 }
+
+/* Future<List<Map<String, dynamic>>> fetchSensorDataFromApi() async {
+  const url = 'https://agreemo-api-v2.onrender.com/sensor-readings';
+  try {
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = json.decode(response.body);
+      return jsonData.map((item) {
+        final Map<String, dynamic> sensorData = item as Map<String, dynamic>;
+        sensorData['reading_time'] = item['reading_time'];
+        sensorData['reading_value'] = item['reading_value'];
+        sensorData['unit'] = item['unit'];
+        final phData = jsonData.where((item) => item['unit'] == 'pH').toList();
+        final ppmData =
+            jsonData.where((item) => item['unit'] == 'ppm').toList();
+        return sensorData;
+      }).toList();
+    } else {
+      throw Exception('Failed to load sensor data: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Error fetching sensor data: $e');
+  }
+} */

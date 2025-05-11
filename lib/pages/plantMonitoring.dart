@@ -104,10 +104,7 @@ class _PlantmonitoringState extends State<Plantmonitoring> {
                       child: PageView(
                         children: [
                           _buildSeedlingProgressCards(),
-                          LiveStreamWidget(
-                            streamUrl:
-                                'https://agreemo-api.onrender.com/stream',
-                          ),
+                          LiveStreamWidget(),
                           const PlantStatusMini(),
                         ],
                       ),

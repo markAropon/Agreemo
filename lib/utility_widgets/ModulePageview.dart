@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:greenhouse_monitoring_project/pages/PlantStatus.dart';
+import 'package:greenhouse_monitoring_project/pages/sales.dart';
+import 'package:greenhouse_monitoring_project/utility_widgets/GreenhouseList.dart';
 import '../pages/HistoryData.dart';
 import '../pages/MaintenancePage.dart';
 import '../pages/dataReading.dart';
@@ -149,6 +151,7 @@ class Modulepageview extends StatelessWidget {
                           );
                         },
                       ),
+                      Spacer(),
                       Modules(
                         title: 'Readings Status',
                         color: const Color.fromARGB(255, 38, 135, 41),
@@ -159,6 +162,38 @@ class Modulepageview extends StatelessWidget {
                             MaterialPageRoute<void>(
                               builder: (BuildContext context) =>
                                   const Plantstatus(),
+                            ),
+                          );
+                        },
+                      ),
+                      Spacer(),
+                      Modules(
+                        title: 'Greenhouses',
+                        color: const Color.fromARGB(255, 2, 59, 4),
+                        icon: Icons.info_outline,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (BuildContext context) =>
+                                  GreenhouseList(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Modules(
+                        title: 'Sales',
+                        color: const Color.fromARGB(255, 5, 25, 88),
+                        icon: Icons.sell_outlined,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (BuildContext context) => Sales(),
                             ),
                           );
                         },

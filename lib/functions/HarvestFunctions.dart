@@ -1,166 +1,180 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:greenhouse_monitoring_project/functions/UserFunctions.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'UserFunctions.dart';
 import 'sqlite.dart';
+
+Future<String?> fetchPlantIdForGreenhouse(String greenhouseId) async {
+  try {
+    final url = Uri.parse(
+        'https://agreemo-api-v2.onrender.com/planted_crops?greenhouse_id=$greenhouseId');
+    final headers = {'x-api-key': 'AgreemoCapstoneProject'};
+
+    final response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      // Handle the actual response format
+      if (data is Map<String, dynamic>) {
+        final plantedCrops = data['planted_crops'] as List<dynamic>?;
+
+        if (plantedCrops != null && plantedCrops.isNotEmpty) {
+          // Find the first entry with matching greenhouse ID
+          final matchingEntry = plantedCrops.firstWhere(
+            (entry) => entry['greenhouse_id'].toString() == greenhouseId,
+            orElse: () => null,
+          );
+
+          if (matchingEntry != null) {
+            return matchingEntry['plant_id']?.toString();
+          }
+        }
+      }
+
+      throw Exception('No plant_id found for greenhouse $greenhouseId');
+    }
+    throw Exception('Failed to fetch plant_id: ${response.statusCode}');
+  } catch (e) {
+    print('Error fetching plant_id: $e');
+    return null;
+  }
+}
 
 Future<void> submitRejectionData({
   required BuildContext context,
   required String selectedGreenhouseId,
   required String selectedCropType,
+  required String deduction,
   required String email,
   required TextEditingController sizeController,
+  required String type,
+  required String qty,
   required TextEditingController damageController,
   required TextEditingController diseaseController,
   required TextEditingController acceptedController,
   required TextEditingController commentController,
 }) async {
-  final headers = {'x-api-key': 'AgreemoCapstoneProject'};
-  String? finalMessage;
-  String dialogTitle = 'Success';
-  IconData dialogIcon = Icons.check_circle_outline;
-  Color iconColor = Colors.green;
-  bool hasError = false;
+  final headers = {
+    'x-api-key': 'AgreemoCapstoneProject',
+  };
 
-  int totalRejected = 0;
-  int accepted = 0;
-
-  try {
-    final rejectionValues = {
-      'Size':
-          int.parse(sizeController.text.isEmpty ? '0' : sizeController.text),
-      'Damage': int.parse(
-          damageController.text.isEmpty ? '0' : damageController.text),
-      'Disease': int.parse(
-          diseaseController.text.isEmpty ? '0' : diseaseController.text),
-    };
-
-    totalRejected = rejectionValues.values.reduce((a, b) => a + b);
-    accepted = int.tryParse(acceptedController.text) ?? 0;
-
-    // Prepare requests
-    final rejectionRequest = http.Request('POST',
-        Uri.parse('https://agreemo-api.onrender.com/reason_for_rejection'))
-      ..bodyFields = {
-        'greenhouse_id': selectedGreenhouseId,
-        'too_small': sizeController.text.isEmpty ? '0' : sizeController.text,
-        'physically_damaged':
-            damageController.text.isEmpty ? '0' : damageController.text,
-        'diseased':
-            diseaseController.text.isEmpty ? '0' : diseaseController.text,
-        'total_rejected': totalRejected.toString(),
-        'rejection_date': DateTime.now().toIso8601String().split('T')[0],
-        'comments':
-            commentController.text.isEmpty ? '' : commentController.text,
-        'email': email,
-      };
-    final int totalSize = await _calculateTotalYield(
-        selectedGreenhouseId, accepted + totalRejected);
-
-    final dbHelper = DatabaseHelper();
-    final greenhouseData = await dbHelper.queryData('greenhouseTable',
-        whereClause: 'id = ?', whereArgs: [selectedGreenhouseId]);
-
-    if (greenhouseData.isNotEmpty) {
-      var sizeValue = greenhouseData.first['size'];
-      int greenhouseSize;
-
-      if (sizeValue is int) {
-        greenhouseSize = sizeValue;
-      } else if (sizeValue is String) {
-        greenhouseSize = int.tryParse(sizeValue) ?? 0;
-      } else {
-        greenhouseSize = 0;
-      }
-
-      if (totalSize > greenhouseSize || totalSize < greenhouseSize) {
-        showCustomDialog(
-          context: context,
-          title: 'Error',
-          message:
-              'Harvest Count ($totalSize) Does not Match Greenhouse Size ($greenhouseSize)',
-          icon: Icons.error,
-          iconColor: Colors.red,
-          backgroundColor: Colors.white,
-        );
-        return;
-      }
-    } else {
-      showCustomDialog(
-        context: context,
-        title: 'Error',
-        message: 'Greenhouse data not found.',
-        icon: Icons.error,
-        iconColor: Colors.red,
-        backgroundColor: Colors.white,
-      );
-      return;
-    }
-
-    final harvestRequest = http.Request(
-        'POST', Uri.parse('https://agreemo-api.onrender.com/harvest'))
-      ..bodyFields = {
-        'greenhouse_id': selectedGreenhouseId.toString(),
-        'plant_type': 'lettuce',
-        'total_yield': totalSize.toString(),
-        'accepted': accepted.toString(),
-        'total_rejected': totalRejected.toString(),
-        'harvest_date': DateTime.now().toIso8601String().split('T')[0],
-        'notes': commentController.text.isEmpty ? '' : commentController.text,
-        'email': email,
-      };
-
-    rejectionRequest.headers.addAll(headers);
-    harvestRequest.headers.addAll(headers);
-
-    // Send requests
-    final responses = await Future.wait([
-      rejectionRequest.send(),
-      harvestRequest.send(),
-    ]);
-
-    final rejectionStatus = responses[0].statusCode;
-    final harvestStatus = responses[1].statusCode;
-    final rejectionSuccess = rejectionStatus >= 200 && rejectionStatus < 300;
-    final harvestSuccess = harvestStatus >= 200 && harvestStatus < 300;
-
-    // Determine final message
-    if (rejectionSuccess && harvestSuccess) {
-      finalMessage = 'Harvest Recorded successfully!';
-    } else {
-      hasError = true;
-      finalMessage =
-          'Submissions failed. Please try again. rejected $rejectionStatus, harvest $harvestStatus';
-    }
-
-    if (!rejectionSuccess || !harvestSuccess) {
-      print('''
-🌐 API Results:
-  Rejection: ${rejectionSuccess ? 'Success' : 'Failed (${responses[0].statusCode})'}
-  Harvest: ${harvestSuccess ? 'Success' : 'Failed (${responses[1].statusCode})'}
-  Response Bodies:
-    Rejection: ${await responses[0].stream.bytesToString()}
-    Harvest: ${await responses[1].stream.bytesToString()}
-''');
-    }
-  } catch (e) {
-    hasError = true;
-    finalMessage =
-        'Network error: ${e is http.ClientException ? 'Connection failed' : 'Unexpected error'}';
-    print('🔥 Critical Error: ${e.toString()}');
+  String? plantId = await fetchPlantIdForGreenhouse(selectedGreenhouseId);
+  if (plantId == null) {
+    showCustomDialog(
+      context: context,
+      title: 'Error',
+      message: 'Could not find plant ID for greenhouse',
+      icon: Icons.error,
+      iconColor: Colors.red,
+      backgroundColor: Colors.white,
+    );
+    return;
   }
 
-  // Show single dialog
-  showCustomDialog(
-    context: context,
-    title: hasError ? 'Submission Issue' : dialogTitle,
-    message: finalMessage,
-    icon: hasError ? Icons.error_outline_sharp : dialogIcon,
-    iconColor: hasError ? Colors.red : iconColor,
-    backgroundColor: Colors.white,
-  );
+  try {
+    // Calculate values
+    final totalRejected = [
+      int.parse(sizeController.text.isEmpty ? '0' : sizeController.text),
+      int.parse(damageController.text.isEmpty ? '0' : damageController.text),
+      int.parse(diseaseController.text.isEmpty ? '0' : diseaseController.text),
+    ].reduce((a, b) => a + b);
+
+    final accepted = int.tryParse(acceptedController.text) ?? 0;
+    final totalYield = accepted + totalRejected;
+
+    // Validate greenhouse size
+    final dbHelper = DatabaseHelper();
+    final greenhouseData = await dbHelper.queryData(
+      'greenhouseTable',
+      whereClause: 'id = ?',
+      whereArgs: [selectedGreenhouseId],
+    );
+
+    if (greenhouseData.isEmpty) throw Exception('Greenhouse not found');
+
+    final greenhouseSize =
+        int.tryParse(greenhouseData.first['size']?.toString() ?? '0') ?? 0;
+    if (totalYield != greenhouseSize) {
+      throw Exception(
+          'Harvest count ($totalYield) doesn\'t match greenhouse size ($greenhouseSize)');
+    }
+
+    // Prepare rejection data with API-required fields
+    final rejectionBody = {
+      'greenhouse_id': selectedGreenhouseId.toString(),
+      'plant_id': plantId.toString(),
+      'email': email,
+      'type': type,
+      'quantity': qty,
+      'rejection_date': DateTime.now().toIso8601String().split('T')[0],
+      'price': '100.0',
+      'deduction_rate': deduction,
+      'comments': commentController.text,
+    };
+
+    final harvestBody = {
+      'user_email': email,
+      'greenhouse_id': selectedGreenhouseId,
+      'plant_id': plantId,
+      'name': (await SharedPreferences.getInstance()).getString('email') ??
+          'Unknown',
+      'plant_type': selectedCropType.toLowerCase(),
+      'total_yield': totalYield.toString(),
+      'accepted': accepted.toString(),
+      'total_rejected': totalRejected.toString(),
+      'harvest_date': DateTime.now().toIso8601String().split('T')[0],
+      'price': '100.0',
+      'notes': commentController.text,
+    };
+    /*    final salesBody = {
+      'user_email': email,
+      'currentPrice': (100.0 - double.parse(deduction)).toString(),
+      'originalPrice': '100.0',
+      'plant_id': plantId.toString(),
+      'quantity': qty,
+    }; */
+
+    // Send requests
+    final rejectionResponse = await http.post(
+      Uri.parse('https://agreemo-api-v2.onrender.com/reason_for_rejection'),
+      headers: headers,
+      body: rejectionBody,
+    );
+
+    final harvestResponse = await http.post(
+      Uri.parse('https://agreemo-api-v2.onrender.com/harvests'),
+      headers: headers,
+      body: harvestBody,
+    );
+
+    // Handle responses
+    if (rejectionResponse.statusCode != 201 &&
+        harvestResponse.statusCode != 201) {
+      sizeController.clear();
+      damageController.clear();
+      diseaseController.clear();
+      acceptedController.clear();
+      commentController.clear();
+      showCustomDialog(
+        context: context,
+        title: 'Harvest recorded',
+        message: 'Harvest data submitted successfully!',
+        icon: Icons.check_circle,
+        iconColor: Colors.green,
+        backgroundColor: Colors.white,
+      );
+      throw Exception('''
+        Failed to submit data:
+        Rejection: ${rejectionResponse.statusCode} - ${rejectionResponse.body}
+        Harvest: ${harvestResponse.statusCode} - ${harvestResponse.body}
+      ''');
+    }
+  } catch (e) {
+    print(e);
+    throw Exception('${e.toString()}');
+  }
 }
 
 Future<void> submitOnSqlite({
@@ -174,11 +188,12 @@ Future<void> submitOnSqlite({
   required TextEditingController acceptedController,
   required TextEditingController commentController,
 }) async {
-  String? finalMessage;
+  /*  String? finalMessage;
   String dialogTitle = 'Success';
   IconData dialogIcon = Icons.check_circle_outline;
   Color iconColor = Colors.green;
-  bool hasError = false;
+
+  bool hasError = false; */
 
   int totalRejected = 0;
   int accepted = 0;
@@ -282,22 +297,22 @@ Future<void> submitOnSqlite({
     await dbHelper.insertData('harvested', harvestData);
     await dbHelper.insertData('rejections', rejectionData);
 
-    finalMessage = 'Harvest and rejection data saved successfully!';
+    /*  finalMessage = 'Harvest and rejection data saved successfully!'; */
   } catch (e) {
-    hasError = true;
-    finalMessage = 'Database error: ${e.toString()}';
+    /*  hasError = true;
+    finalMessage = 'Database error: ${e.toString()}'; */
     print('🔥 Database Error: ${e.toString()}');
   }
 
   // Show final result dialog
-  showCustomDialog(
+/*   showCustomDialog(
     context: context,
     title: hasError ? 'Submission Issue' : dialogTitle,
     message: finalMessage,
     icon: hasError ? Icons.error_outline_sharp : dialogIcon,
-    iconColor: hasError ? Colors.red : iconColor,
-    backgroundColor: Colors.white,
-  );
+    iconColor: hasError ? Colors.red : iconColor,s
+    backgroundColor: Colors.white,s
+  ); */
 }
 
 Future<void> fetchHarvestData({
@@ -315,12 +330,12 @@ Future<void> fetchHarvestData({
 
   var harvestRequest = http.Request(
     'GET',
-    Uri.parse('https://agreemo-api.onrender.com/harvests'),
+    Uri.parse('https://agreemo-api-v2.onrender.com/harvests'),
   );
 
   var rejectionRequest = http.Request(
     'GET',
-    Uri.parse('https://agreemo-api.onrender.com/reason_for_rejection'),
+    Uri.parse('https://agreemo-api-v2.onrender.com/reason_for_rejection'),
   );
 
   harvestRequest.headers.addAll(headers);
@@ -404,7 +419,7 @@ Future<void> GetCardData({
   };
   var rejectionRequest = http.Request(
     'GET',
-    Uri.parse('https://agreemo-api.onrender.com/reason_for_rejection'),
+    Uri.parse('https://agreemo-api-v2.onrender.com/reason_for_rejection'),
   );
   rejectionRequest.headers.addAll(headers);
   try {} catch (e) {
@@ -425,12 +440,12 @@ Future<Map<String, dynamic>> fetchDataList() async {
 
   var harvestRequest = http.Request(
     'GET',
-    Uri.parse('https://agreemo-api.onrender.com/harvests'),
+    Uri.parse('https://agreemo-api-v2.onrender.com/harvests'),
   );
 
   var rejectionRequest = http.Request(
     'GET',
-    Uri.parse('https://agreemo-api.onrender.com/reason_for_rejection'),
+    Uri.parse('https://agreemo-api-v2.onrender.com/reason_for_rejection'),
   );
 
   harvestRequest.headers.addAll(headers);
@@ -511,7 +526,7 @@ Future<List<Map<String, dynamic>>> fetchGreenhouseList() async {
     'x-api-key': 'AgreemoCapstoneProject',
   };
 
-  var url = Uri.parse('https://agreemo-api.onrender.com/greenhouses');
+  var url = Uri.parse('https://agreemo-api-v2.onrender.com/greenhouses');
   var request = http.Request('GET', url);
   request.headers.addAll(headers);
 
@@ -520,12 +535,13 @@ Future<List<Map<String, dynamic>>> fetchGreenhouseList() async {
 
     if (response.statusCode == 200) {
       String responseBody = await response.stream.bytesToString();
-      List<dynamic> data = json.decode(responseBody);
-      final dbHelper = DatabaseHelper();
+      final decoded = json.decode(responseBody);
 
-      if (data.isNotEmpty && data[0] is Map<String, dynamic>) {
-        // First store data in database
-        for (var greenhouse in data) {
+      if (decoded is Map<String, dynamic> && decoded['greenhouses'] is List) {
+        final List<dynamic> greenhouseList = decoded['greenhouses'];
+        final dbHelper = DatabaseHelper();
+
+        for (var greenhouse in greenhouseList) {
           await dbHelper.insertData('greenhouseTable', {
             'id': greenhouse['greenhouse_id']?.toString() ?? 'Unknown',
             'size': greenhouse['size']?.toString() ?? 'Unknown',
@@ -533,8 +549,7 @@ Future<List<Map<String, dynamic>>> fetchGreenhouseList() async {
           });
         }
 
-        // Then return the formatted data
-        return data
+        return greenhouseList
             .map<Map<String, dynamic>>((greenhouse) => {
                   'id': greenhouse['greenhouse_id']?.toString() ?? 'Unknown',
                   'size': greenhouse['size']?.toString() ?? 'Unknown',
@@ -542,7 +557,7 @@ Future<List<Map<String, dynamic>>> fetchGreenhouseList() async {
                 })
             .toList();
       } else {
-        print('Unexpected data structure: $data');
+        print('Unexpected data format: $decoded');
         return [];
       }
     } else {

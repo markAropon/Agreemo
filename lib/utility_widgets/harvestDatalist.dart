@@ -23,15 +23,27 @@ class _DataListViewState extends State<DataListView> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final dynamic jsonData = json.decode(response.body);
         if (jsonData is Map && jsonData.containsKey("planted_crops")) {
-          final crops = (jsonData["planted_crops"] as List)
-              .where((item) => item["status"] == "not harvested")
-              .toList();
+          final plantedCrops = jsonData["planted_crops"];
+          if (plantedCrops is! List) {
+            // Add type check
+            throw Exception("'planted_crops' is not a list");
+          }
+          final crops = (plantedCrops as List<dynamic>)
+              .where((item) =>
+                  (item as Map<String, dynamic>)["status"] == "not harvested")
+              .map((item) {
+            final record = item as Map<String, dynamic>;
+            return {
+              ...record,
+              "plant_id": record["plant_id"],
+            };
+          }).toList();
           if (crops.isEmpty) {
             return [
               {"message": "No data available"}
             ];
           }
-          return crops.map((item) => item as Map<String, dynamic>).toList();
+          return crops;
         } else {
           throw Exception("Missing 'planted_crops' key in response");
         }
@@ -39,7 +51,8 @@ class _DataListViewState extends State<DataListView> {
         throw Exception("Failed to load data: ${response.statusCode}");
       }
     } catch (e) {
-      throw Exception("Error fetching data: $e");
+      print('Error fetching data: $e');
+      throw Exception("Failed to load data");
     }
   }
 
@@ -92,10 +105,22 @@ class _DataListViewState extends State<DataListView> {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _fetchData(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+          /*  return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: Colors.red),
+              SizedBox(width: 8),
+              Text(
+                'No data available',
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ); */
         } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
+          print(snapshot.error);
+          return Text('Something went wrong: ${snapshot.error}');
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(child: Text('No data found.'));
         }
@@ -231,11 +256,14 @@ class _DataListViewState extends State<DataListView> {
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('$status'),
                                     Text(
-                                        'Planted: ${record['planting_date']?.toString().substring(0, 10) ?? 'Unknown'}'),
+                                        'Planted: ${record['planting_date']?.toString().substring(0, 10) ?? 'Unknown'}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis),
                                     Text(
-                                        'Days in greenhouse: ${record['greenhouse_daysOld'] ?? 0}'),
+                                        'Days in greenhouse: ${record['greenhouse_daysOld'] ?? 0}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis),
                                   ],
                                 ),
                                 isThreeLine: true,

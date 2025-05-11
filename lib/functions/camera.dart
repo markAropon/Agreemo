@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:video_player/video_player.dart';
 
 class LiveStreamWidget extends StatefulWidget {
-  final String streamUrl;
-
-  const LiveStreamWidget({super.key, required this.streamUrl});
+  const LiveStreamWidget({super.key});
 
   @override
   State<LiveStreamWidget> createState() => _LiveStreamWidgetState();
@@ -14,17 +12,35 @@ class LiveStreamWidget extends StatefulWidget {
 class _LiveStreamWidgetState extends State<LiveStreamWidget> {
   bool _isLoading = true;
   bool _hasError = false;
-  int _reloadTrigger = 0;
+  late VideoPlayerController _videoPlayerController;
   late Timer _autoReloadTimer;
-  late WebViewController _webViewController;
 
   @override
   void initState() {
     super.initState();
-    _initializeWebView();
+    _initializeVideoPlayer();
     _startAutoReload();
   }
 
+  // Initialize the video player
+  void _initializeVideoPlayer() {
+    _videoPlayerController = VideoPlayerController.asset('assets/lettuce.mp4')
+      ..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          _videoPlayerController.play();
+          _videoPlayerController.setLooping(true); // Set video to loop
+        }
+      }).catchError((error) {
+        setState(() {
+          _hasError = true;
+        });
+      });
+  }
+
+  // Start auto reload timer
   void _startAutoReload() {
     _autoReloadTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
       if (mounted && !_hasError) {
@@ -33,53 +49,21 @@ class _LiveStreamWidgetState extends State<LiveStreamWidget> {
     });
   }
 
-  void _initializeWebView() {
-    _webViewController = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageFinished: (String url) {
-            if (mounted) {
-              setState(() => _isLoading = false);
-            }
-          },
-          onWebResourceError: (error) {
-            if (mounted) {
-              setState(() {
-                _isLoading = false;
-                _hasError = true;
-              });
-            }
-          },
-        ),
-      )
-      ..loadHtmlString(_getHtmlContent());
-  }
-
-  String _getHtmlContent() => '''
-    <html>
-      <body style="margin:0;padding:0;">
-        <img src="${widget.streamUrl}?t=${DateTime.now().millisecondsSinceEpoch}" 
-             style="width:100%;height:100%;object-fit:cover;" 
-             alt="Live Stream">
-      </body>
-    </html>
-  ''';
-
+  // Retry loading the video stream
   void _retryStream() {
     if (mounted) {
       setState(() {
         _hasError = false;
         _isLoading = true;
-        _reloadTrigger++;
       });
     }
-    _webViewController.loadHtmlString(_getHtmlContent());
+    _initializeVideoPlayer();
   }
 
   @override
   void dispose() {
     _autoReloadTimer.cancel();
+    _videoPlayerController.dispose();
     super.dispose();
   }
 
@@ -108,12 +92,9 @@ class _LiveStreamWidgetState extends State<LiveStreamWidget> {
               ? _buildErrorWidget()
               : Stack(
                   children: [
-                    WebViewWidget(
-                      controller: _webViewController,
-                      key: ValueKey<int>(_reloadTrigger),
-                    ),
-                    if (_isLoading)
-                      const Center(child: CircularProgressIndicator()),
+                    _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : VideoPlayer(_videoPlayerController),
                   ],
                 ),
         ),
@@ -121,12 +102,13 @@ class _LiveStreamWidgetState extends State<LiveStreamWidget> {
     );
   }
 
+  // Error widget to retry stream
   Widget _buildErrorWidget() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Stream Connection Error',
+          const Text('Error loading video',
               style: TextStyle(color: Colors.red)),
           const SizedBox(height: 10),
           ElevatedButton(
@@ -135,7 +117,7 @@ class _LiveStreamWidgetState extends State<LiveStreamWidget> {
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Retry Connection'),
+            child: const Text('Retry Video'),
           ),
         ],
       ),

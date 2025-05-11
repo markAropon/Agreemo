@@ -97,13 +97,20 @@ class _HarvestTrackerPageState extends State<Harvest1> {
   // Function to submit data to the API
   Future<void> submitData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // Retrieve the email from SharedPreferences
     String? email = prefs.getString('email');
 
-    if (email != null) {
-      try {
-        submitRejectionData(
+    bool isSuccess = true;
+    String errorMessage = '';
+
+    if (email == null) {
+      print("Error: No email found in SharedPreferences");
+      return;
+    }
+
+    try {
+      if (sizeController.text.isNotEmpty &&
+          int.parse(sizeController.text) > 0) {
+        await submitRejectionData(
           context: context,
           selectedGreenhouseId: selectedGreenhouseId.toString(),
           acceptedController: acceptedController,
@@ -113,23 +120,73 @@ class _HarvestTrackerPageState extends State<Harvest1> {
           sizeController: sizeController,
           damageController: Damage,
           diseaseController: Disease,
+          deduction: '5',
+          type: 'too_small',
+          qty: sizeController.text,
         );
-      } catch (e) {
-        print("Error submitting rejection data: $e");
-        print("saving on locally instead");
-        submitOnSqlite(
-            context: context,
-            selectedGreenhouseId: selectedGreenhouseId.toString(),
-            selectedCropType: 'lettuce',
-            email: email,
-            sizeController: sizeController,
-            damageController: Damage,
-            diseaseController: Disease,
-            acceptedController: acceptedController,
-            commentController: commentController);
       }
-    } else {
-      print("Error: No email found in SharedPreferences");
+
+      if (Damage.text.isNotEmpty && int.parse(Damage.text) > 0) {
+        await submitRejectionData(
+          context: context,
+          selectedGreenhouseId: selectedGreenhouseId.toString(),
+          acceptedController: acceptedController,
+          commentController: commentController,
+          email: email,
+          selectedCropType: 'lettuce',
+          sizeController: sizeController,
+          damageController: Damage,
+          diseaseController: Disease,
+          deduction: '7',
+          type: 'physically_damaged',
+          qty: Damage.text,
+        );
+      }
+
+      if (Disease.text.isNotEmpty && int.parse(Disease.text) > 0) {
+        await submitRejectionData(
+          context: context,
+          selectedGreenhouseId: selectedGreenhouseId.toString(),
+          acceptedController: acceptedController,
+          commentController: commentController,
+          email: email,
+          selectedCropType: 'lettuce',
+          sizeController: sizeController,
+          damageController: Damage,
+          diseaseController: Disease,
+          deduction: '10',
+          type: 'diseased',
+          qty: Disease.text,
+        );
+      }
+    } catch (e) {
+      isSuccess = false;
+      errorMessage = e.toString();
+
+      print("Error submitting rejection data: $e");
+
+      submitOnSqlite(
+        context: context,
+        selectedGreenhouseId: selectedGreenhouseId.toString(),
+        selectedCropType: 'lettuce',
+        email: email,
+        sizeController: sizeController,
+        damageController: Damage,
+        diseaseController: Disease,
+        acceptedController: acceptedController,
+        commentController: commentController,
+      );
+    } finally {
+      showCustomDialog(
+        context: context,
+        title: isSuccess ? 'Harvest recorded' : 'Error',
+        message: isSuccess
+            ? 'Harvest data submitted successfully!'
+            : errorMessage.replaceAll('Exception:', ''),
+        icon: isSuccess ? Icons.check_circle : Icons.error,
+        iconColor: isSuccess ? Colors.green : Colors.red,
+        backgroundColor: Colors.white,
+      );
     }
   }
 
@@ -213,49 +270,43 @@ class _HarvestTrackerPageState extends State<Harvest1> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 0.0, vertical: 12),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      DataListView(
-                        ontap: (int greenhouseId) {
-                          setState(() {
-                            selectedGreenhouseId = greenhouseId;
-                          });
-                          ontap();
-                        },
-                      ),
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.020,
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          ontap();
-                        },
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.all(16.0),
-                          backgroundColor: Colors.blue.withOpacity(0.1),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        DataListView(
+                          ontap: (int greenhouseId) {
+                            setState(() {
+                              selectedGreenhouseId = greenhouseId;
+                            });
+                            ontap();
+                          },
+                        ),
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.020,
+                        ),
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Tap to record your harvest information',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.blueGrey,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_forward,
+                                    color: Colors.blueGrey),
+                              ],
+                            ),
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Tap to record your harvest information',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.blueGrey,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward, color: Colors.blueGrey),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
+                      ]),
                 ),
               ),
 

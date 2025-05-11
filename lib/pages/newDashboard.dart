@@ -102,9 +102,9 @@ class _LandingState extends State<Landing> {
     _initialize();
     final dbhelper = DatabaseHelper();
     //clear the database tables if needed
-    /*  dbhelper.clearTable('seedlingsTable');
+    //dbhelper.clearTable('seedlingsTable');
     dbhelper.clearTable('toHarvest');
-    dbhelper.clearTable('sensorReading'); */
+    //dbhelper.clearTable('sensorReading');
 
     dbhelper.updateStatusBasedOnDaysOld();
     fetchGreenhouseList();
@@ -197,7 +197,7 @@ class _LandingState extends State<Landing> {
       }
 
       final response = await http.get(
-        Uri.parse('https://agreemo-api.onrender.com/users'),
+        Uri.parse('https://agreemo-api-v2.onrender.com/users'),
         headers: headers,
       );
 

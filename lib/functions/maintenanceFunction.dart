@@ -32,7 +32,7 @@ Future<void> AddMaintenanceRecord(
   print('Title: $title, Description: $description, Email: $email, Name: $name');
 
   try {
-    final url = Uri.parse('https://agreemo-api.onrender.com/maintenance');
+    final url = Uri.parse('https://agreemo-api-v2.onrender.com/maintenance');
     final headers = {
       'x-api-key': 'AgreemoCapstoneProject',
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -94,7 +94,7 @@ Future<void> AddMaintenanceRecord(
 Future<List<Map<String, dynamic>>> fetchMaintenanceLogs() async {
   print('Fetching maintenance logs...');
   try {
-    final url = Uri.parse('https://agreemo-api.onrender.com/maintenance');
+    final url = Uri.parse('https://agreemo-api-v2.onrender.com/maintenance');
     final headers = {'x-api-key': 'AgreemoCapstoneProject'};
 
     print('Sending GET request to: $url');
@@ -130,7 +130,7 @@ Future<void> AddNewHardwareStatus(
 }) async {
   try {
     final url =
-        Uri.parse('https://agreemo-api.onrender.com/hardware_status/add');
+        Uri.parse('https://agreemo-api-v2.onrender.com/hardware_status/add');
     final headers = {
       'x-api-key': 'AgreemoCapstoneProject',
     };
@@ -471,7 +471,7 @@ Future<void> registerComponent({
   };
 
   var url =
-      Uri.parse('https://agreemo-api.onrender.com/hardware_components/add');
+      Uri.parse('https://agreemo-api-v2.onrender.com/hardware_components/add');
 
   try {
     final response = await http.post(url, headers: headers, body: body);
@@ -523,7 +523,7 @@ Future<List<Map<String, dynamic>>> fetchComponentData() async {
   print('Fetching component data...');
   try {
     final url =
-        Uri.parse('https://agreemo-api.onrender.com/hardware_components');
+        Uri.parse('https://agreemo-api-v2.onrender.com/hardware_components');
     final headers = {'x-api-key': 'AgreemoCapstoneProject'};
 
     print('Sending GET request to: $url');
@@ -575,13 +575,13 @@ class _HardwareDropdownState extends State<HardwareDropdown> {
     try {
       // Fetch hardware status
       final statusResponse = await http.get(
-        Uri.parse('https://agreemo-api.onrender.com/hardware_status'),
+        Uri.parse('https://agreemo-api-v2.onrender.com/hardware_status'),
         headers: {'x-api-key': 'AgreemoCapstoneProject'},
       );
 
       // Fetch hardware components
       final componentsResponse = await http.get(
-        Uri.parse('https://agreemo-api.onrender.com/hardware_components'),
+        Uri.parse('https://agreemo-api-v2.onrender.com/hardware_components'),
         headers: {'x-api-key': 'AgreemoCapstoneProject'},
       );
 

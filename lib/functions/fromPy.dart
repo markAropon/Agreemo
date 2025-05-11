@@ -12,8 +12,7 @@ class VideoStream extends StatefulWidget {
 }
 
 class _VideoStreamState extends State<VideoStream> {
-  final String videoUrl =
-      "https://agreemo-api.onrender.com/stream"; // URL of the video stream
+  final String videoUrl = "https://agreemo-api-v2.onrender.com/stream";
   bool isStreamAvailable = false;
 
   late SnapshotHandler snapshotHandler;
@@ -23,7 +22,7 @@ class _VideoStreamState extends State<VideoStream> {
   @override
   void initState() {
     super.initState();
-    snapshotHandler = SnapshotHandler(); // Initialize SnapshotHandler
+    snapshotHandler = SnapshotHandler();
     _checkStreamAvailability();
 
     // Set up a periodic timer to take a snapshot every 8 hours (8 * 60 * 60 * 1000 ms = 28800000 ms)

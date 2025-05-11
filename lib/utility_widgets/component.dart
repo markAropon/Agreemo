@@ -27,7 +27,6 @@ class _ComponentRegistrationStepperDialogState
   String? _selectedGreenhouseId;
   String _selectedComponentType = 'DHT Sensor';
 
-  // Component type options
   final List<String> _componentTypes = [
     'DHT Sensor',
     'PH Sensor',
@@ -87,8 +86,8 @@ class _ComponentRegistrationStepperDialogState
       'serial_number': _serialNumberController.text,
     };
 
-    var url =
-        Uri.parse('https://agreemo-api.onrender.com/hardware_components/add');
+    var url = Uri.parse(
+        'https://agreemo-api-v2.onrender.com/hardware_components/add');
 
     try {
       final response = await http.post(url, headers: headers, body: body);
@@ -262,7 +261,8 @@ class _ComponentRegistrationStepperDialogState
                             color: Colors.blueGrey[800],
                           ),
                         ),
-                        HardwareDropdown(),
+                        //HardwareDropdown(),
+                        _buildComponentTypeDropdown(),
                         SizedBox(height: 10),
                         Text(
                           'Manufacturer',

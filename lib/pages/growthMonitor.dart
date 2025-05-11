@@ -1,8 +1,10 @@
+// ignore_for_file: unused_field
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:video_player/video_player.dart'; // Import video_player
 import 'dashboard.dart';
 
 class Growthmonitor extends StatefulWidget {
@@ -18,7 +20,7 @@ class _GrowthmonitorState extends State<Growthmonitor> {
   bool _isLoading = true;
   bool _hasError = false;
   int _reloadTrigger = 0;
-  final String _streamUrl = 'https://agreemo-api.onrender.com/stream';
+
   late Timer _autoReloadTimer;
 
   final DatabaseReference tempRef = FirebaseDatabase.instanceFor(
@@ -33,14 +35,32 @@ class _GrowthmonitorState extends State<Growthmonitor> {
               'https://aggreemo-login-default-rtdb.asia-southeast1.firebasedatabase.app')
       .ref("sensorReadings/humidity");
 
-  late final WebViewController _webViewController;
+  late VideoPlayerController _videoPlayerController;
 
   @override
   void initState() {
     super.initState();
-    _initializeWebView();
+    _initializeVideoPlayer();
     _fetchData();
     _startAutoReload();
+  }
+
+  // Initialize the video player
+  void _initializeVideoPlayer() {
+    _videoPlayerController = VideoPlayerController.asset('assets/lettuce.mp4')
+      ..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          _videoPlayerController.play();
+          _videoPlayerController.setLooping(true); // Set video to loop
+        }
+      }).catchError((error) {
+        setState(() {
+          _hasError = true;
+        });
+      });
   }
 
   void _startAutoReload() {
@@ -51,35 +71,15 @@ class _GrowthmonitorState extends State<Growthmonitor> {
     });
   }
 
-  void _initializeWebView() {
-    _webViewController = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageFinished: (String url) {
-            if (mounted) {
-              setState(() => _isLoading = false);
-            }
-          },
-          onWebResourceError: (error) {
-            if (mounted) {
-              setState(() {
-                _isLoading = false;
-                _hasError = true;
-              });
-            }
-          },
-        ),
-      )
-      ..loadHtmlString('''
-        <html>
-          <body style="margin:0;padding:0;">
-            <img src="$_streamUrl?t=${DateTime.now().millisecondsSinceEpoch}" 
-                 style="width:100%;height:100%;object-fit:cover;" 
-                 alt="Live Stream">
-          </body>
-        </html>
-      ''');
+  void _retryStream() {
+    if (mounted) {
+      setState(() {
+        _hasError = false;
+        _isLoading = true;
+        _reloadTrigger++;
+      });
+    }
+    _initializeVideoPlayer();
   }
 
   void _fetchData() async {
@@ -106,25 +106,6 @@ class _GrowthmonitorState extends State<Growthmonitor> {
     }
   }
 
-  void _retryStream() {
-    if (mounted) {
-      setState(() {
-        _hasError = false;
-        _isLoading = true;
-        _reloadTrigger++;
-      });
-    }
-    _webViewController.loadHtmlString('''
-      <html>
-        <body style="margin:0;padding:0;">
-          <img src="$_streamUrl?t=${DateTime.now().millisecondsSinceEpoch}" 
-               style="width:100%;height:100%;object-fit:cover;" 
-               alt="Live Stream">
-        </body>
-      </html>
-    ''');
-  }
-
   Future<void> _refreshData() async {
     if (mounted) {
       setState(() {
@@ -138,6 +119,7 @@ class _GrowthmonitorState extends State<Growthmonitor> {
   @override
   void dispose() {
     _autoReloadTimer.cancel();
+    _videoPlayerController.dispose();
     super.dispose();
   }
 
@@ -223,12 +205,9 @@ class _GrowthmonitorState extends State<Growthmonitor> {
               ? _buildErrorWidget()
               : Stack(
                   children: [
-                    WebViewWidget(
-                      controller: _webViewController,
-                      key: ValueKey<int>(_reloadTrigger),
-                    ),
-                    if (_isLoading)
-                      const Center(child: CircularProgressIndicator()),
+                    _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : VideoPlayer(_videoPlayerController),
                   ],
                 ),
         ),
@@ -349,35 +328,12 @@ class _GrowthmonitorState extends State<Growthmonitor> {
     );
   }
 
-  /* Widget _buildFAQItem({required String question, required String answer}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            question,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.blueGrey,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            answer,
-            style: const TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  } */
-
   Widget _buildErrorWidget() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Stream Connection Error',
+          const Text('Error loading video',
               style: TextStyle(color: Colors.red)),
           const SizedBox(height: 10),
           ElevatedButton(
@@ -386,7 +342,7 @@ class _GrowthmonitorState extends State<Growthmonitor> {
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Retry Connection'),
+            child: const Text('Retry Video'),
           ),
         ],
       ),

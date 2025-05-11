@@ -176,10 +176,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       String pin = pinController.text;
                                       String email = username.text;
 
-                                      // Call verifyCode with the entered username, pin, and generated token
                                       verifyCode(email, pin, token);
 
-                                      // Show the next dialog to input the new password
                                       TextEditingController
                                           newPasswordController =
                                           TextEditingController();
@@ -197,7 +195,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                             newPasswordController,
                                         obscureTextList: [true],
                                         onConfirm: () {
-                                          // When confirmed, change the password using the provided information
                                           changePass(
                                               email,
                                               newPasswordController.text,

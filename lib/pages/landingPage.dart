@@ -35,8 +35,8 @@ class _LandingpageState extends State<Landingpage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color.fromARGB(255, 27, 58, 105),
-              Color.fromARGB(255, 97, 174, 236),
+              Color.fromARGB(255, 41, 177, 222),
+              Color.fromARGB(255, 240, 248, 255),
             ],
           ),
         ),

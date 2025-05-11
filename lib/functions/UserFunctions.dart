@@ -13,7 +13,7 @@ Future<bool> GetUserEmail(String text) async {
     'x-api-key': 'AgreemoCapstoneProject',
   };
 
-  var url = Uri.parse('https://agreemo-api.onrender.com/stored-email');
+  var url = Uri.parse('https://agreemo-api-v2.onrender.com/stored-email');
   String responseData = '';
 
   try {
@@ -133,7 +133,7 @@ Future<bool> addUser({
 
   var request = http.Request(
     'POST',
-    Uri.parse('https://agreemo-api.onrender.com/user'),
+    Uri.parse('https://agreemo-api-v2.onrender.com/user'),
   );
 
   request.bodyFields = {
@@ -189,24 +189,33 @@ Future<void> updatePassword(
   };
 
   var url =
-      Uri.parse('https://agreemo-api.onrender.com/new-user/change-password');
+      Uri.parse('https://agreemo-api-v2.onrender.com/new-user/change-password');
   var body = {
     'email': email,
     'new_password': newPassword,
   };
 
   try {
-    final response = await http.put(url, headers: headers, body: body);
+    final response = await http.put(
+      url,
+      headers: headers,
+      body: body,
+    );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       showCustomDialog(
         context: context,
         title: 'Password Saved',
-        message: 'New Password Recorded You can now use your account',
+        message: 'New Password Recorded. You can now use your account.',
         icon: Icons.check_circle_outline,
         iconColor: Colors.white,
         backgroundColor: Colors.green,
-        onConfirm: () => LoginScreen(),
+        onConfirm: () {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (Route<dynamic> route) => false,
+          );
+        },
       );
     } else {
       print(
@@ -243,7 +252,7 @@ Future<void> signinUser(
   }
 
   try {
-    var url = Uri.parse('https://agreemo-api.onrender.com/user/login');
+    var url = Uri.parse('https://agreemo-api-v2.onrender.com/user/login');
     var headers = {
       'x-api-key': 'AgreemoCapstoneProject',
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -309,7 +318,6 @@ Future<void> signinUser(
       );
     } else if (response.statusCode == HttpStatus.forbidden) {
       try {
-        // Using username.text instead of accessing an undefined emailController
         if (await checkIfActive(email: username.text)) {
           TextEditingController passwordController = TextEditingController();
           showCustomDialog(
@@ -321,14 +329,27 @@ Future<void> signinUser(
             backgroundColor: Colors.white,
             changePasswordController: passwordController,
             onConfirm: () async {
-              if (validatePassword(passwordController.text) != null) {
-                await updatePassword(
-                  email: username.text,
-                  newPassword: passwordController.text.trim(),
-                  context: context,
+              final validationMessage =
+                  validatePassword(passwordController.text);
+              if (validationMessage != null) {
+                ScaffoldMessenger.of(Navigator.of(context).context)
+                    .showSnackBar(
+                  SnackBar(content: Text(validationMessage)),
                 );
-                Navigator.of(context).pop();
+                return;
               }
+
+              await updatePassword(
+                email: username.text,
+                newPassword: passwordController.text.trim(),
+                context: context,
+              );
+
+              Navigator.of(context).pop();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Password updated successfully')),
+              );
             },
           );
         } else {
@@ -415,7 +436,7 @@ Future<void> Userlogout(BuildContext context) async {
       };
 
       var request = http.Request(
-          'POST', Uri.parse('https://agreemo-api.onrender.com/user/logout'));
+          'POST', Uri.parse('https://agreemo-api-v2.onrender.com/user/logout'));
       request.bodyFields = {
         'email': email,
       };
@@ -467,7 +488,7 @@ Future<void> forceLogout(BuildContext context) async {
     };
 
     var request = http.Request(
-        'POST', Uri.parse('https://agreemo-api.onrender.com/user/logout'));
+        'POST', Uri.parse('https://agreemo-api-v2.onrender.com/user/logout'));
     request.bodyFields = {
       'email': email,
     };
@@ -505,7 +526,7 @@ void forgotpass(BuildContext context, String email) async {
 Future<String?> sendVerificationCode(String email) async {
   var headers = {'x-api-key': 'AgreemoCapstoneProject'};
   var request = http.Request('POST',
-      Uri.parse('https://agreemo-api.onrender.com/send-verification-code'));
+      Uri.parse('https://agreemo-api-v2.onrender.com/send-verification-code'));
 
   request.bodyFields = {'email': email};
   request.headers.addAll(headers);
@@ -545,7 +566,7 @@ Future<void> verifyCode(
   };
 
   var request = http.Request(
-      'POST', Uri.parse('https://agreemo-api.onrender.com/verify-code'));
+      'POST', Uri.parse('https://agreemo-api-v2.onrender.com/verify-code'));
   request.bodyFields = {
     'email': email,
     'verification_code': verificationCode,
@@ -575,7 +596,7 @@ Future<void> changePass(String email, String newPassword, String token) async {
   };
 
   var request = http.Request('POST',
-      Uri.parse('https://agreemo-api.onrender.com/user-reset-password'));
+      Uri.parse('https://agreemo-api-v2.onrender.com/user-reset-password'));
   request.bodyFields = {
     'email': email,
     'new_password': newPassword,
@@ -608,7 +629,7 @@ Future<void> getUserData() async {
 
   // Create the GET request
   var request = http.Request(
-      'GET', Uri.parse('https://agreemo-api.onrender.com/users/$loginId'));
+      'GET', Uri.parse('https://agreemo-api-v2.onrender.com/users/$loginId'));
 
   // Add the headers
   request.headers.addAll(headers);
@@ -653,8 +674,8 @@ Future<bool> checkIfActive({
   };
 
   // Create the GET request
-  var request =
-      http.Request('GET', Uri.parse('https://agreemo-api.onrender.com/users'));
+  var request = http.Request(
+      'GET', Uri.parse('https://agreemo-api-v2.onrender.com/users'));
 
   // Add the headers
   request.headers.addAll(headers);
@@ -697,6 +718,15 @@ String? validatePassword(String? password) {
     return 'Password must contain at least one digit';
   }
   return null; // Password is valid
+}
+
+void showPasswordValidationError(BuildContext context, String errorMessage) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(errorMessage),
+      backgroundColor: Colors.red,
+    ),
+  );
 }
 
 //dialog

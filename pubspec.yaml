@@ -126,6 +126,7 @@ flutter:
     - assets\icons\harvest.png
     - assets\icons\CommentsIcon.png
     - assets\icons\app_icon.png
+    - assets\lettuce.mp4
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
