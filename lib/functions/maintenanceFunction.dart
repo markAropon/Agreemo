@@ -502,15 +502,19 @@ Future<void> registerComponent({
 Future<List<String>> _getGreenhouseIds() async {
   // Get the greenhouse data
   try {
-    final url = Uri.parse('https://agreemo-api.onrender.com/greenhouses');
+    final url = Uri.parse('https://agreemo-api-v2.onrender.com/greenhouses');
     final headers = {'x-api-key': 'AgreemoCapstoneProject'};
 
     final response = await http.get(url, headers: headers);
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List;
-      return data
-          .map<String>((greenhouse) => greenhouse['greenhouse_id'].toString())
-          .toList();
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic> && data.containsKey('greenhouses')) {
+        final greenhouseList = data['greenhouses'] as List;
+        return greenhouseList
+            .map<String>((greenhouse) => greenhouse['greenhouse_id'].toString())
+            .toList();
+      }
+      return [];
     }
     return [];
   } catch (e) {

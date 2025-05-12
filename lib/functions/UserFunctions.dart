@@ -88,6 +88,61 @@ Future<bool> addUser({
     );
     return false;
   }
+  if (firstName.isEmpty) {
+    showCustomDialog(
+      context: context,
+      title: "This field Cannot be empty",
+      message: "Please enter Your First Name.",
+      icon: Icons.error,
+      iconColor: Colors.red,
+      backgroundColor: Colors.white,
+    );
+    return false;
+  }
+  if (lastName.isEmpty) {
+    showCustomDialog(
+      context: context,
+      title: "This field Cannot be empty",
+      message: "Please enter Your Last Name.",
+      icon: Icons.error,
+      iconColor: Colors.red,
+      backgroundColor: Colors.white,
+    );
+    return false;
+  }
+  if (lastName.isEmpty) {
+    showCustomDialog(
+      context: context,
+      title: "This field Cannot be empty",
+      message: "Please enter Your Last Name.",
+      icon: Icons.error,
+      iconColor: Colors.red,
+      backgroundColor: Colors.white,
+    );
+    return false;
+  }
+  if (addressText.isEmpty) {
+    showCustomDialog(
+      context: context,
+      title: "This field Cannot be empty",
+      message: "Please enter Your Home Address.",
+      icon: Icons.error,
+      iconColor: Colors.red,
+      backgroundColor: Colors.white,
+    );
+    return false;
+  }
+  if (phoneNumber.isEmpty || phoneNumber.length != 11) {
+    showCustomDialog(
+      context: context,
+      title: "Invalid Phone Number",
+      message: "Phone number must be exactly 11 digits.",
+      icon: Icons.error,
+      iconColor: Colors.red,
+      backgroundColor: Colors.white,
+    );
+    return false;
+  }
 
   // Try parsing the date to ensure it's in the correct format (yyyy-MM-dd)
   DateTime? birthDate;
@@ -310,8 +365,7 @@ Future<void> signinUser(
       showCustomDialog(
         context: context,
         title: 'Login Failed',
-        message:
-            'Your Account has been deactivated by the admin, try contacting the admin if you think this is wrong',
+        message: 'Login Failed Try Again or Contact the Admin for Assistance',
         icon: Icons.error,
         iconColor: Colors.red,
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
@@ -330,7 +384,7 @@ Future<void> signinUser(
             changePasswordController: passwordController,
             onConfirm: () async {
               final validationMessage =
-                  validatePassword(passwordController.text);
+                  validatePassword(passwordController.text.trim(), context);
               if (validationMessage != null) {
                 ScaffoldMessenger.of(Navigator.of(context).context)
                     .showSnackBar(
@@ -344,9 +398,6 @@ Future<void> signinUser(
                 newPassword: passwordController.text.trim(),
                 context: context,
               );
-
-              Navigator.of(context).pop();
-
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Password updated successfully')),
               );
@@ -707,14 +758,20 @@ Future<bool> checkIfActive({
   }
 }
 
-String? validatePassword(String? password) {
+String? validatePassword(String? password, context) {
   if (password == null || password.isEmpty) {
     return 'Password is required';
   }
   if (password.length < 8) {
+    ScaffoldMessenger.of(Navigator.of(context).context).showSnackBar(
+      SnackBar(content: Text('Password must be at least 8 characters long')),
+    );
     return 'Password must be at least 8 characters long';
   }
   if (!password.contains(RegExp(r'[0-9]'))) {
+    ScaffoldMessenger.of(Navigator.of(context).context).showSnackBar(
+      SnackBar(content: Text('Password must contain at least one digit')),
+    );
     return 'Password must contain at least one digit';
   }
   return null; // Password is valid
